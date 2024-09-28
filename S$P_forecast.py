@@ -82,8 +82,8 @@ class SPYdailyforecastrategy(strategy):
 if __name__ == "__main__":
     symbol = '^SPX'
     db_host = 'localhost'
-    db_user = 'sec_user'
-    db_pass = 'Damilare20$'
+    db_user = 'user'
+    db_pass = 'password'
     db_name = 'securities_master'
     initial_capital = 100000.0
     heartbeat = 0
