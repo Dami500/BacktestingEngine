@@ -9,8 +9,16 @@ from Portfolio import portfolio
 from execution import SimulatedExecutionHandler
 from dataeventhandler import securities_master_handler
 from forcasting import obtain_lagged_series
+import mysql.connector as msc
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor as rf
+
+db_host = 'localhost'
+db_user = 'sec_user'
+db_pass = 'Damilare20$'
+db_name = 'securities_master'
+plug ='caching_sha2_password'
+con = msc.connect(host=db_host, user=db_user, password=db_pass, db=db_name, auth_plugin= plug)
 
 
 class SPYdailyforecastrategy(strategy):
@@ -23,7 +31,7 @@ class SPYdailyforecastrategy(strategy):
 
     def __init__(self, bars, events):
         self.bars = bars
-        self.symbol = self.bars.symbol
+        self.symbol = self.bars.symbols
         self.events = events
         self.datetime_now = datetime.now()
         self.model_start_date = datetime(2001, 1, 10)
@@ -38,7 +46,7 @@ class SPYdailyforecastrategy(strategy):
         """
         # Create a lagged series of the S&P500 US stock market index
         """
-        lagged_series = obtain_lagged_series(self.symbol, self.model_start_date, self.model_end_date, 'close_price', 5)
+        lagged_series = obtain_lagged_series(self.symbol, self.model_start_date, self.model_end_date, 5)
         # Use the prior two days of returns as predictor
         # values, with direction as the response
         X = lagged_series[["lag1", "lag2"]]
@@ -51,7 +59,7 @@ class SPYdailyforecastrategy(strategy):
         y_train = y[y.index < start_test]
         print(y_train)
         y_test = y[y.index >= start_test]
-        model = QDA()
+        model = LDA()
         model.fit(X_train, y_train)
         return model
 
@@ -79,19 +87,24 @@ class SPYdailyforecastrategy(strategy):
                     self.events.put(signal)
 
 
-if __name__ == "__main__":
-    symbol = '^SPX'
-    db_host = 'localhost'
-    db_user = 'user'
-    db_pass = 'password'
-    db_name = 'securities_master'
-    initial_capital = 100000.0
-    heartbeat = 0
-    start_date = datetime(2021, 1, 1, 0, 0, 0)
-    backtest = Backtest(symbol, db_host, db_user, db_pass, db_name, initial_capital,
-                        heartbeat, start_date, securities_master_handler, SimulatedExecutionHandler,
-                        portfolio, SPYdailyforecastrategy)
-    backtest.simulate_trading('returns')
+# if __name__ == "__main__":
+#     symbol = 'AAPL'
+#     db_host = 'localhost'
+#     db_user = 'sec_user'
+#     db_pass = 'Damilare20$'
+#     db_name = 'securities_master'
+#     plug_in = 'caching_sha2_password'
+#     initial_capital = 100000.0
+#     heartbeat = 0
+#     # events = queue.Queue()
+#     start_date = datetime(2001, 1, 1, 0, 0, 0)
+#     # SMH = securities_master_handler(symbol, db_host, db_user, db_pass, db_name)
+#     # MAC = MovingAverageCrossStrategy(SMH, events)
+#     backtest = Backtest(symbol, db_host, db_user, db_pass, db_name, plug_in, initial_capital,
+#                         heartbeat, start_date, securities_master_handler, SimulatedExecutionHandler,
+#                         portfolio, SPYdailyforecastrategy)
+#     backtest.simulate_trading('close_price')
+
 
 
 

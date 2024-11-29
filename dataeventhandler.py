@@ -1,15 +1,9 @@
 from abc import ABCMeta, abstractmethod
 import mysql.connector as msc
 import pandas as pd
-import numpy as np
-import queue
 import warnings
-warnings.filterwarnings("ignore")
-db_host = 'localhost'
-db_user = 'user'
-db_pass = 'password'
-db_name = 'securities_master'
-con = msc.connect(host=db_host, user=db_user, password=db_pass, db=db_name)
+
+warnings.filterwarnings('ignore')
 
 
 class event(object):
@@ -138,14 +132,14 @@ class data_handler(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def get_latest_bars(self, n, type):
+    def get_latest_bars(self, n):
         """
         Returns the last N bars updated.
         """
         raise NotImplementedError("Should implement get_latest_bars()")
 
     @abstractmethod
-    def get_latest_bars_datetime(self, n):
+    def get_latest_bars_datetime(self):
         """
         Returns a Python datetime object for the last bar.
         """
@@ -162,13 +156,14 @@ class data_handler(object):
 
 
 class securities_master_handler(data_handler):
+
     """
     securities_master_handler is designed to obtain data form securities database for
     each requested symbol and provide an interface
     to obtain the "latest" bar in a manner identical to a live
     trading interface.
     """
-    def __init__(self, events, symbol, host, user, password, name):
+    def __init__(self, events, symbols, host, user, password, name, plug_in):
         """
         initialises the securities_master_handler by connecting to the database and
         pulling data concerning the symbols in the symbol list
@@ -180,50 +175,124 @@ class securities_master_handler(data_handler):
             password - The database password
             name - The database name
         """
-
-        self.symbol = symbol
+        self.plugin = plug_in
+        self.symbols = symbols
         self.host = host
         self.user = user
         self.password = password
         self.db_name = name
         self.events = events
-        self.symbol_data = {}
-        self.latest_symbol_data = {self.symbol: [], 'Date': [], 'returns': []}
+        self.symbol_data =  []
+        self.latest_symbol_data = []
         self.continue_backtest = True
+
+    def get_prices_id(self, tickers):
+        """
+        Locates the corresponding symbol ID for each ticker in the list of tickers
+        returns a pandas dataframe for IDs
+        """
+        con = msc.connect(host=self.host, user=self.user, password=self.password, db=self.db_name,auth_plugin=self.plugin)
+        symbols = {}
+        for ticker in tickers:
+            select_str = """
+            SELECT securities_master.symbol.id
+            from securities_master.symbol
+            where securities_master.symbol.ticker = '%s'
+            """ % ticker
+            df = pd.read_sql_query(select_str, con)
+            symbols[ticker] = df.iloc[0, 0]
+        return symbols
+
+
+    def get_prices(self, locations):
+        """
+        Makes use of the symbol_id list to return dataframes of the prices of those assets
+        """
+        con = msc.connect(host=self.host, user=self.user, password=self.password, db=self.db_name,
+                          auth_plugin=self.plugin)
+        dataframes = []
+        for id in locations.keys():
+            select_str = """SELECT *
+                           from securities_master.daily_price
+                           where securities_master.daily_price.symbol_id = '%s'
+                        """ % locations[id]
+            data = pd.read_sql_query(select_str, con)
+            specific_data = data[
+                ['symbol_id', 'price_date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume']]
+            specific_data.rename(columns={'symbol_id': id}, inplace=True)
+            specific_data['returns'] = specific_data['close_price'].pct_change()
+            specific_data['returns'].fillna(0, inplace=True)
+            dataframes.append(specific_data)
+        return dataframes
 
     def pull_data(self, price_type):
         """
-        pulls data from the database based on the symbol
-        """
-        con = msc.connect(host= self.host, user=self.user, password=self.password, db=self.db_name)
-        symbol_select_str = """SELECT securities_master.‘symbol‘.‘id‘
-                               FROM securities_master.‘symbol‘
-                               where securities_master.‘symbol‘.‘ticker‘ = '%s'""" % self.symbol
-        df = pd.read_sql_query(symbol_select_str, con)
-        symbol_id = df.iloc[0, 0]
-        select_str = """select distinct *
-                        from securities_master.‘daily_price‘
-                        where securities_master.‘daily_price‘.symbol_id = '%d'
-                        order by securities_master.‘daily_price‘.price_date 
-                            """ % symbol_id
-        final_df = pd.read_sql_query(select_str, con)
-        final_df['returns'] = final_df[price_type].pct_change().fillna(0)
-        self.symbol_data[self.symbol] = []
-        for price in final_df['%s' % price_type]:
-            self.symbol_data[self.symbol].append(price)
-        self.symbol_data['Date'] = []
-        for date in final_df['price_date']:
-            self.symbol_data['Date'].append(date)
-        self.symbol_data['returns'] = []
-        for returns in final_df['returns']:
-            self.symbol_data['returns'].append(returns)
+         pulls data from the database based on the symbol
+         returns a list of dictionaries
+         """
+        tickers = self.get_prices_id(self.symbols)
+        data = self.get_prices(tickers)
+        choices = []
+        for package in data:
+            length = len(package[price_type])
+            choices.append(length)
+        loop = min(choices)
+        for i in range(0, loop):
+            day = []
+            for package in data:
+                name = package.columns[0]
+                constructor = {name: [], 'Date': [], 'returns': []}
+                package = package[[price_type, 'price_date', 'returns']]
+                constructor[name].append([package.iloc[i, 0]])
+                constructor['Date'].append(package.iloc[i, 1])
+                constructor['returns'].append(package.iloc[i, 2])
+                day.append(constructor)
+            self.symbol_data.append(day)
         return self.symbol_data
+        #     page = {package.columns[0]: [], 'Date': [], 'Returns': []}
+        #     loop = package[[price_type, 'price_date']]
+        #     loop['returns'] = loop[price_type].pct_change()
+        #     for i in range(len(loop[price_type])):
+        #         page[package.columns[0]].append(loop.iloc[i, 0])
+        #         page['Date'].append(loop.iloc[i, 1])
+        #         page['Returns'].append(loop.iloc[i, 2])
+        #
+        #     self.symbol_data.append(page)
+        # return self.symbol_data
 
-    def get_new_bar(self):
+    # def pull_data(self, price_type):
+    #     """
+    #     pulls data from the database based on the symbol
+    #     """
+    #     con = msc.connect(host=self.host, user=self.user, password=self.password, db=self.db_name, auth_plugin=self.plugin)
+    #     symbol_select_str = """SELECT securities_master.symbol.id
+    #                            FROM securities_master.symbol
+    #                            where securities_master.symbol.ticker = '%s'""" % self.symbol
+    #     df = pd.read_sql_query(symbol_select_str, con)
+    #     symbol_id = df.iloc[0, 0]
+    #     select_str = """select distinct *
+    #                     from securities_master.daily_price
+    #                     where securities_master.daily_price.symbol_id = '%d'
+    #                     order by securities_master.daily_price.price_date
+    #                         """ % symbol_id
+    #     final_df = pd.read_sql_query(select_str, con)
+    #     final_df['returns'] = final_df[price_type].pct_change().fillna(0)
+    #     self.symbol_data[self.symbol] = []
+    #     for price in final_df['%s' % price_type]:
+    #         self.symbol_data[self.symbol].append(price)
+    #     self.symbol_data['Date'] = []
+    #     for date in final_df['price_date']:
+    #         self.symbol_data['Date'].append(date)
+    #     self.symbol_data['returns'] = []
+    #     for returns in final_df['returns']:
+    #         self.symbol_data['returns'].append(returns)
+    #     return self.symbol_data
+
+    def get_new_bar(self, price_type):
         """
         obtain the price one at a time to simulate a live trading experience
         """
-        for b in self.pull_data('close_price')[self.symbol]:
+        for b in self.pull_data(price_type):
             yield b
 
     def get_latest_bar(self):
@@ -231,37 +300,47 @@ class securities_master_handler(data_handler):
         Returns the last bar from the latest_symbol list.
         """
         try:
-            bars_list = self.latest_symbol_data[self.symbol]
+            bars_list = self.latest_symbol_data[-1]
         except KeyError:
             print("That symbol is not available in the historical data set.")
             raise
         else:
-            return bars_list[-1]
+            return bars_list
 
-    def get_latest_bars(self, N, data_type):
+    def get_latest_bars(self, N):
         """
         Returns the last N bars from the latest_symbol list,
         or N-k if less available.
         """
         try:
-            bars_list = self.latest_symbol_data[data_type]
+            bars_dict = {}
+            for day in self.latest_symbol_data[N:]:
+                print(day)
+                for bar in day:
+                    print(bar)
+                    if list(bar.keys())[0] not in bars_dict:
+                        bars_dict[list(bar.keys())[0]] = []
+                    else:
+                        bars_dict[bar.keys()[0]].append(bar[bar.keys()[0]])
         except KeyError:
             print("That symbol is not available in the historical data set.")
             raise
         else:
-            return bars_list[-N:]
+            return bars_dict
 
     def get_latest_bars_datetime(self):
         """
         Returns a Python datetime object for the last bar.
         """
         try:
-            bars_list = self.latest_symbol_data['Date']
+            bars_list = []
+            for bar in self.latest_symbol_data:
+                bars_list.append(bar[0]['Date'])
         except KeyError:
             print("That symbol is not available in the historical data set.")
             raise
         else:
-            return bars_list[-1]
+            return bars_list
 
     def update_bars(self, price_type, gen, day):
         """
@@ -270,16 +349,14 @@ class securities_master_handler(data_handler):
         """
         try:
             bar = next(gen)
-            bar_date = self.symbol_data['Date'][day]
-            bar_returns = self.symbol_data['returns'][day]
+            bar_date = bar[day]['Date']
+            bar_returns = bar[day]['returns']
         except StopIteration:
             self.continue_backtest = False
         else:
             if bar is not None:
-                self.latest_symbol_data[self.symbol].append(bar)
-                self.latest_symbol_data['Date'].append(bar_date)
-                self.latest_symbol_data['returns'].append(bar_returns)
-        self.events.put(market_event())
+                self.latest_symbol_data.append(bar)
+        # self.events.put(market_event())
         return self.latest_symbol_data
 
 
@@ -297,8 +374,23 @@ class strategy(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def calculate_signals(self):
+    def calculate_signals(self, event):
         """
         Provides the mechanisms to calculate the list of signals.
         """
         raise NotImplementedError("Should implement calculate_signals()")
+
+aapl = securities_master_handler(event, ['AAPL', 'GOOG', 'LLY'],  'localhost','sec_user','Damilare20$', 'securities_master',
+                                 'caching_sha2_password')
+data = aapl.pull_data('close_price')
+gen = aapl.get_new_bar('close_price')
+aapl.update_bars('AAPL', gen, 0)
+latest = aapl.latest_symbol_data
+print(latest)
+print(aapl.get_latest_bars_datetime())
+print(aapl.get_latest_bars(2))
+# db_host = 'localhost'
+# db_user = 'sec_user'
+# db_pass = 'Damilare20$'
+# db_name = 'securities_master'
+# plug ='caching_sha2_password'
