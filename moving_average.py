@@ -56,24 +56,23 @@ class MovingAverageCrossStrategy(strategy):
             bars = self.bars.get_latest_bars(self.long_window)
             for bar in bars:
                 bar_date = self.bars.get_latest_bars_datetime()
-                if bar is not None and bar != []:
-                    short_ma = np.mean(bars[0:self.short_window])
-                    long_ma = np.mean(bars[0:self.long_window])
+                if bar is not None and bars[bar] != []:
+                    short_ma = np.mean(bars[bar][0:self.short_window])
+                    long_ma = np.mean(bars[bar][0:self.long_window])
                     dt = datetime.now()
                     sig_dir = ""
-                    if short_ma > long_ma and self.bought[self.symbol] == "OUT":
+                    if short_ma > long_ma and self.bought[bar] == "OUT":
                         print("LONG: %s" % bar_date)
                         sig_dir = 'LONG'
-                        signal = signal_event(1, self.symbol, dt, sig_dir, 1.0)
+                        signal = signal_event(1, bar, dt, sig_dir, 1.0)
                         self.events.put(signal)
-                        self.bought[self.symbol] = 'LONG'
-                    elif short_ma < long_ma and self.bought[self.symbol] == "LONG":
+                        self.bought[bar] = 'LONG'
+                    elif short_ma < long_ma and self.bought[bar] == "LONG":
                         print("SHORT: %s" % bar_date)
                         sig_dir = 'EXIT'
-                        signal = signal_event(1, self.symbol, dt, sig_dir, 1.0)
-
+                        signal = signal_event(1, bar, dt, sig_dir, 1.0)
                         self.events.put(signal)
-                        self.bought[self.symbol] = 'OUT'
+                        self.bought[bar] = 'OUT'
 
 
 # if __name__ == "__main__":

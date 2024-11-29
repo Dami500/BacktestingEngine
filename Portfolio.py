@@ -21,7 +21,7 @@ class portfolio(object):
     portfolio total across bars.
     """
 
-    def __init__(self, bars, event, start_date, symbol, initial_capital=100000):
+    def __init__(self, bars, event, start_date, symbols, initial_capital=100000):
         """
         Initialises the portfolio with bars and an event queue.
         Also includes a starting datetime index and initial capital
@@ -34,35 +34,42 @@ class portfolio(object):
         self.bars = bars
         self.start_date = start_date
         self.initial_capital = initial_capital
-        self.symbol = symbol
+        self.symbols = symbols
         self.event = event
         self.positions = self.construct_all_positions()
-        self.current_positions = {self.symbol: 0}
+        self.current_positions = {symbol: 0 for symbol in self.symbols}
         self.current_holdings = self.construct_current_holdings()
         self.holdings = self.construct_all_holdings()
-        # self.equity_curve = self.create_equity_curve_dataframe()
+        self.equity_curve = self.create_equity_curve_dataframe()
 
     def construct_all_positions(self):
         """
         returns a dictionary with the date and position
         """
-        position = [{self.symbol: 0, 'datetime': self.start_date}]
+        position = [{symbol: 0, 'datetime': self.start_date} for symbol in self.symbols]
         return position
 
     def construct_current_holdings(self):
         """"
         returns a dictionary containing symbol, date, commission, capital and Total
         """
-        holding = {self.symbol: 0, 'datetime': self.start_date, 'commission': 0, 'cash': self.initial_capital,
-                   'total': self.initial_capital}
+         # holding = {symbol: 0, 'datetime': self.start_date, 'commission': 0, 'cash': self.initial_capital,
+        #            'total': self.initial_capital }
+        holding = {}
+        for symbol in self.symbols:
+            holding[symbol] = 0
+            holding['datetime'] = self.start_date
+            holding['commission'] = 0
+            holding['cash'] = self.initial_capital
+            holding['total'] = self.initial_capital
         return holding
 
     def construct_all_holdings(self):
         """"
         returns a dictionary containing symbol, date, commission, capital and Total
         """
-        holding = {self.symbol: 0, 'datetime': self.start_date, 'commission': 0, 'cash': self.initial_capital,
-                   'total': self.initial_capital}
+        holding = [{symbol: 0, 'datetime': self.start_date, 'commission': 0, 'cash': self.initial_capital,
+                   'total': self.initial_capital} for symbol in self.symbols]
         return [holding]
 
     def update_time(self, event):
@@ -72,14 +79,20 @@ class portfolio(object):
         current market data at this stage is known (OHLCV).
         Makes use of a MarketEvent from the events queue. Updates positions and holdings
         """
-        latest_datetime = self.bars.get_latest_bars_datetime()
+        latest_datetime = self.bars.get_latest_bars_datetime(1)
         # Update positions
-        dp = {self.symbol: self.current_positions[self.symbol], 'datetime': latest_datetime}
-        # Append the current positions
+        dp = {}
+        for symbol in self.symbols:
+            dp[symbol] = self.current_positions[symbol]
+            dp['datetime'] = latest_datetime
         self.positions.append(dp)
         # Update holdings
-        dh = {self.symbol: 0, 'datetime': latest_datetime, 'cash': self.current_holdings['cash'],
-              'commission': self.current_holdings['commission'], 'total': self.current_holdings['cash']}
+        dh = {}
+        for symbol in self.symbols:
+            dh[symbol] = self.holdings[symbol]
+
+        # dh = {self.symbol: 0, 'datetime': latest_datetime, 'cash': self.current_holdings['cash'],
+        #       'commission': self.current_holdings['commission'], 'total': self.current_holdings['cash']}
         market_value = self.current_positions[self.symbol]*self.bars.get_latest_bar()
         dh['market_value'] = market_value
         self.holdings.append(dh)

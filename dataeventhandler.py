@@ -139,7 +139,7 @@ class data_handler(object):
         raise NotImplementedError("Should implement get_latest_bars()")
 
     @abstractmethod
-    def get_latest_bars_datetime(self):
+    def get_latest_bars_datetime(self, N):
         """
         Returns a Python datetime object for the last bar.
         """
@@ -243,7 +243,7 @@ class securities_master_handler(data_handler):
                 name = package.columns[0]
                 constructor = {name: [], 'Date': [], 'returns': []}
                 package = package[[price_type, 'price_date', 'returns']]
-                constructor[name].append([package.iloc[i, 0]])
+                constructor[name].append(package.iloc[i, 0])
                 constructor['Date'].append(package.iloc[i, 1])
                 constructor['returns'].append(package.iloc[i, 2])
                 day.append(constructor)
@@ -314,28 +314,25 @@ class securities_master_handler(data_handler):
         """
         try:
             bars_dict = {}
-            for day in self.latest_symbol_data[N:]:
-                print(day)
+            for bar in  self.latest_symbol_data[0]:
+                bars_dict[list(bar.keys())[0]] = []
+            for day in self.latest_symbol_data[-N:]:
                 for bar in day:
-                    print(bar)
-                    if list(bar.keys())[0] not in bars_dict:
-                        bars_dict[list(bar.keys())[0]] = []
-                    else:
-                        bars_dict[bar.keys()[0]].append(bar[bar.keys()[0]])
+                    bars_dict[list(bar.keys())[0]].append(bar[list(bar.keys())[0]][0])
         except KeyError:
             print("That symbol is not available in the historical data set.")
             raise
         else:
             return bars_dict
 
-    def get_latest_bars_datetime(self):
+    def get_latest_bars_datetime(self, N):
         """
         Returns a Python datetime object for the last bar.
         """
         try:
             bars_list = []
-            for bar in self.latest_symbol_data:
-                bars_list.append(bar[0]['Date'])
+            for bar in self.latest_symbol_data[-N:]:
+                bars_list.append(bar[0]['Date'][0])
         except KeyError:
             print("That symbol is not available in the historical data set.")
             raise
@@ -385,10 +382,13 @@ aapl = securities_master_handler(event, ['AAPL', 'GOOG', 'LLY'],  'localhost','s
 data = aapl.pull_data('close_price')
 gen = aapl.get_new_bar('close_price')
 aapl.update_bars('AAPL', gen, 0)
+aapl.update_bars('AAPL', gen, 1)
+aapl.update_bars('AAPL', gen, 2)
 latest = aapl.latest_symbol_data
 print(latest)
-print(aapl.get_latest_bars_datetime())
-print(aapl.get_latest_bars(2))
+
+print(aapl.get_latest_bars_datetime(3))
+print(aapl.get_latest_bars(3))
 # db_host = 'localhost'
 # db_user = 'sec_user'
 # db_pass = 'Damilare20$'

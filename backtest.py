@@ -26,7 +26,7 @@ class Backtest(object):
         """
         Initialize the backtest.
         """
-        self.symbol = symbol
+        self.symbols = symbols
         self.host = host
         self.user = user
         self.password = password
@@ -36,9 +36,9 @@ class Backtest(object):
         self.heartbeat = heartbeat
         self.events = queue.Queue()
         self.start_date = start_date
-        self.data_handler = data_handler(self.events, self.symbol, self.host, self.user, self.password, self.db_name, self.plugin)
+        self.data_handler = data_handler(self.events, self.symbols, self.host, self.user, self.password, self.db_name, self.plugin)
         self.execution_handler = execution_handler(self.events)
-        self.portfolio = portfolio(self.data_handler, self.events, self.start_date, self.symbol, self.initial_capital)
+        self.portfolio = portfolio(self.data_handler, self.events, self.start_date, self.symbols, self.initial_capital)
         self.strategy = strategy(self.data_handler, self.events)
         self.signals = 0
         self.orders = 0
