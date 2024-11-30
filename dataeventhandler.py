@@ -312,7 +312,7 @@ class securities_master_handler(data_handler):
         in the latest symbol data structure
         """
         dictionary = self.get_latest_bars(1)
-        return dictionary[symbol]
+        return dictionary[symbol][-1]
 
     def get_latest_bars(self, N):
         """
@@ -358,7 +358,7 @@ class securities_master_handler(data_handler):
         else:
             if bar is not None:
                 self.latest_symbol_data.append(bar)
-        self.events.put(market_event())
+        # self.events.put(market_event())
         return self.latest_symbol_data
 
 
@@ -394,7 +394,8 @@ class strategy(object):
 #
 # print(aapl.get_latest_bars_datetime(3))
 # print(aapl.get_latest_bars(3))
-# db_host = 'localhost'
+# print(aapl.get_latest_bar_value('AAPL'))
+# # db_host = 'localhost'
 # db_user = 'sec_user'
 # db_pass = 'Damilare20$'
 # db_name = 'securities_master'

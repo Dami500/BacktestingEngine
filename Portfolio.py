@@ -103,7 +103,8 @@ class portfolio(object):
         #       'commission': self.current_holdings['commission'], 'total': self.current_holdings['cash']}
         for symbol in self.symbols:
             market_value = self.current_positions[symbol]*self.bars.get_latest_bar_value(symbol)
-            dh['market_value'] = market_value
+            print(market_value)
+            dh[symbol] = market_value
             dh['total']+=market_value
         self.holdings.append(dh)
 
@@ -203,6 +204,6 @@ class portfolio(object):
         stats = [("Total Return", "%0.2f%%" % ((total_return - 1.0) * 100.0)),
                  ("Sharpe Ratio", "%0.2f" % sharpe_ratio),
                  ("Max Drawdown", "%0.2f%%" % (max_dd * 100.0)),
-                 ("Drawdown Duration", "%d" % dd_duration)]
+                 ("Drawdown Duration", "%s" % dd_duration)]
         return stats
 
