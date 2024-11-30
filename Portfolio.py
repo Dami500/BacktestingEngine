@@ -58,18 +58,23 @@ class portfolio(object):
         holding = {}
         for symbol in self.symbols:
             holding[symbol] = 0
-            holding['datetime'] = self.start_date
-            holding['commission'] = 0
-            holding['cash'] = self.initial_capital
-            holding['total'] = self.initial_capital
+        holding['datetime'] = self.start_date
+        holding['commission'] = 0
+        holding['cash'] = self.initial_capital
+        holding['total'] = self.initial_capital
         return holding
 
     def construct_all_holdings(self):
         """"
         returns a dictionary containing symbol, date, commission, capital and Total
         """
-        holding = [{symbol: 0, 'datetime': self.start_date, 'commission': 0, 'cash': self.initial_capital,
-                   'total': self.initial_capital} for symbol in self.symbols]
+        holding = {}
+        for symbol in self.symbols:
+            holding[symbol] = 0
+        holding['datetime'] = self.start_date
+        holding['commission'] = 0
+        holding['cash'] = self.initial_capital
+        holding['total'] = self.initial_capital
         return [holding]
 
     def update_time(self, event):
@@ -84,17 +89,22 @@ class portfolio(object):
         dp = {}
         for symbol in self.symbols:
             dp[symbol] = self.current_positions[symbol]
-            dp['datetime'] = latest_datetime
+        dp['datetime'] = latest_datetime
         self.positions.append(dp)
         # Update holdings
         dh = {}
         for symbol in self.symbols:
-            dh[symbol] = self.holdings[symbol]
-
+            dh[symbol] = 0
+        dh['datetime'] = latest_datetime
+        dh['cash'] = self.current_holdings['cash']
+        dh['commission'] = self.current_holdings['commission']
+        dh['total'] = self.current_holdings['cash']
         # dh = {self.symbol: 0, 'datetime': latest_datetime, 'cash': self.current_holdings['cash'],
         #       'commission': self.current_holdings['commission'], 'total': self.current_holdings['cash']}
-        market_value = self.current_positions[self.symbol]*self.bars.get_latest_bar()
-        dh['market_value'] = market_value
+        for symbol in self.symbols:
+            market_value = self.current_positions[symbol]*self.bars.get_latest_bar_value(symbol)
+            dh['market_value'] = market_value
+            dh['total']+=market_value
         self.holdings.append(dh)
 
     def update_positions_from_fill(self, fill):
@@ -109,7 +119,7 @@ class portfolio(object):
         if fill.direction == 'SELL':
             fill_dir = -1
         # Update positions list with new quantities
-        self.current_positions[self.symbol] += fill_dir * fill.quantity
+        self.current_positions[fill.symbol] += fill_dir * fill.quantity
 
     def update_holdings_from_fill(self, fill):
         """
@@ -123,11 +133,12 @@ class portfolio(object):
         if fill.direction == 'SELL':
             fill_dir = -1
     # Update holdings dict with new quantities
-        fill_cost = self.bars.get_latest_bar()
+        fill_cost = self.bars.get_latest_bar_value(fill.symbol)
         cost = fill_dir * fill_cost * fill.quantity
         self.current_holdings[fill.symbol] += cost
         self.current_holdings['commission'] += fill.commission
         self.current_holdings['cash'] -= (cost + fill.commission)
+        self.current_holdings['total'] += (cost + fill.commission)
 
     def update_fill(self, event):
         """

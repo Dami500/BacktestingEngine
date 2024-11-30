@@ -55,7 +55,7 @@ class MovingAverageCrossStrategy(strategy):
         if events.type == 'MARKET':
             bars = self.bars.get_latest_bars(self.long_window)
             for bar in bars:
-                bar_date = self.bars.get_latest_bars_datetime()
+                bar_date = self.bars.get_latest_bars_datetime(1)
                 if bar is not None and bars[bar] != []:
                     short_ma = np.mean(bars[bar][0:self.short_window])
                     long_ma = np.mean(bars[bar][0:self.long_window])
@@ -75,20 +75,20 @@ class MovingAverageCrossStrategy(strategy):
                         self.bought[bar] = 'OUT'
 
 
-# if __name__ == "__main__":
-#     symbol = 'AAPL'
-#     db_host = 'localhost'
-#     db_user = 'sec_user'
-#     db_pass = 'Damilare20$'
-#     db_name = 'securities_master'
-#     plug_in = 'caching_sha2_password'
-#     initial_capital = 100000.0
-#     heartbeat = 0
-#     # events = queue.Queue()
-#     start_date = datetime(2001, 1, 1, 0, 0, 0)
-#     # SMH = securities_master_handler(symbol, db_host, db_user, db_pass, db_name)
-#     # MAC = MovingAverageCrossStrategy(SMH, events)
-#     backtest = Backtest(symbol, db_host, db_user, db_pass, db_name, plug_in, initial_capital,
-#                         heartbeat, start_date, securities_master_handler, SimulatedExecutionHandler,
-#                         portfolio, MovingAverageCrossStrategy)
-#     backtest.simulate_trading('close_price')
+if __name__ == "__main__":
+    symbol = ['AAPL', 'GOOG']
+    db_host = 'localhost'
+    db_user = 'sec_user'
+    db_pass = 'Damilare20$'
+    db_name = 'securities_master'
+    plug_in = 'caching_sha2_password'
+    initial_capital = 100000.0
+    heartbeat = 0
+    # events = queue.Queue()
+    start_date = datetime(2020, 1, 1, 0, 0, 0)
+    # SMH = securities_master_handler(symbol, db_host, db_user, db_pass, db_name)
+    # MAC = MovingAverageCrossStrategy(SMH, events)
+    backtest = Backtest(symbol, db_host, db_user, db_pass, db_name, plug_in, initial_capital,
+                        heartbeat, start_date, securities_master_handler, SimulatedExecutionHandler,
+                        portfolio, MovingAverageCrossStrategy)
+    backtest.simulate_trading('close_price')

@@ -307,6 +307,13 @@ class securities_master_handler(data_handler):
         else:
             return bars_list
 
+    def get_latest_bar_value(self, symbol):
+        """Returns the latest bar values for a symbol
+        in the latest symbol data structure
+        """
+        dictionary = self.get_latest_bars(1)
+        return dictionary[symbol]
+
     def get_latest_bars(self, N):
         """
         Returns the last N bars from the latest_symbol list,
@@ -346,14 +353,12 @@ class securities_master_handler(data_handler):
         """
         try:
             bar = next(gen)
-            bar_date = bar[day]['Date']
-            bar_returns = bar[day]['returns']
         except StopIteration:
             self.continue_backtest = False
         else:
             if bar is not None:
                 self.latest_symbol_data.append(bar)
-        # self.events.put(market_event())
+        self.events.put(market_event())
         return self.latest_symbol_data
 
 
@@ -377,18 +382,18 @@ class strategy(object):
         """
         raise NotImplementedError("Should implement calculate_signals()")
 
-aapl = securities_master_handler(event, ['AAPL', 'GOOG', 'LLY'],  'localhost','sec_user','Damilare20$', 'securities_master',
-                                 'caching_sha2_password')
-data = aapl.pull_data('close_price')
-gen = aapl.get_new_bar('close_price')
-aapl.update_bars('AAPL', gen, 0)
-aapl.update_bars('AAPL', gen, 1)
-aapl.update_bars('AAPL', gen, 2)
-latest = aapl.latest_symbol_data
-print(latest)
-
-print(aapl.get_latest_bars_datetime(3))
-print(aapl.get_latest_bars(3))
+# aapl = securities_master_handler(event, ['AAPL', 'GOOG', 'LLY'],  'localhost','sec_user','Damilare20$', 'securities_master',
+#                                  'caching_sha2_password')
+# data = aapl.pull_data('close_price')
+# gen = aapl.get_new_bar('close_price')
+# aapl.update_bars('AAPL', gen, 0)
+# aapl.update_bars('AAPL', gen, 1)
+# aapl.update_bars('AAPL', gen, 2)
+# latest = aapl.latest_symbol_data
+# print(latest)
+#
+# print(aapl.get_latest_bars_datetime(3))
+# print(aapl.get_latest_bars(3))
 # db_host = 'localhost'
 # db_user = 'sec_user'
 # db_pass = 'Damilare20$'

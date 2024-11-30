@@ -26,7 +26,7 @@ class Backtest(object):
         """
         Initialize the backtest.
         """
-        self.symbols = symbols
+        self.symbols = symbol
         self.host = host
         self.user = user
         self.password = password
@@ -53,7 +53,6 @@ class Backtest(object):
         gen = self.data_handler.get_new_bar(price_type)
         while True:
             i += 1
-            print(i)
         # Update the market bars
             if self.data_handler.continue_backtest:
                 self.data_handler.update_bars(price_type, gen, i)
