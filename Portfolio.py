@@ -46,15 +46,14 @@ class portfolio(object):
         """
         returns a dictionary with the date and position
         """
-        position = [{symbol: 0, 'datetime': self.start_date} for symbol in self.symbols]
-        return position
+        position = {symbol: 0 for symbol in self.symbols}
+        position['datetime'] = self.start_date
+        return [position]
 
     def construct_current_holdings(self):
         """"
         returns a dictionary containing symbol, date, commission, capital and Total
         """
-         # holding = {symbol: 0, 'datetime': self.start_date, 'commission': 0, 'cash': self.initial_capital,
-        #            'total': self.initial_capital }
         holding = {}
         for symbol in self.symbols:
             holding[symbol] = 0
@@ -99,11 +98,8 @@ class portfolio(object):
         dh['cash'] = self.current_holdings['cash']
         dh['commission'] = self.current_holdings['commission']
         dh['total'] = self.current_holdings['cash']
-        # dh = {self.symbol: 0, 'datetime': latest_datetime, 'cash': self.current_holdings['cash'],
-        #       'commission': self.current_holdings['commission'], 'total': self.current_holdings['cash']}
         for symbol in self.symbols:
             market_value = self.current_positions[symbol]*self.bars.get_latest_bar_value(symbol)
-            print(market_value)
             dh[symbol] = market_value
             dh['total']+=market_value
         self.holdings.append(dh)
@@ -199,11 +195,11 @@ class portfolio(object):
         returns = self.create_equity_curve_dataframe()['returns']
         pnl = self.create_equity_curve_dataframe()['equity_curve']
         sharpe_ratio = calculate_sharpe(returns, 252 * 60 * 6.5)
-        drawdown, max_dd, dd_duration = calculate_drawdowns(pnl)
-        self.create_equity_curve_dataframe()['drawdown'] = drawdown
+        # drawdown, max_dd, dd_duration = calculate_drawdowns(pnl)
+        # self.create_equity_curve_dataframe()['drawdown'] = drawdown
         stats = [("Total Return", "%0.2f%%" % ((total_return - 1.0) * 100.0)),
-                 ("Sharpe Ratio", "%0.2f" % sharpe_ratio),
-                 ("Max Drawdown", "%0.2f%%" % (max_dd * 100.0)),
-                 ("Drawdown Duration", "%s" % dd_duration)]
+                 ("Sharpe Ratio", "%0.2f" % sharpe_ratio)]
+                 # ("Max Drawdown", "%0.2f%%" % (max_dd * 100.0)),
+                 # ("Drawdown Duration", "%s" % dd_duration)]
         return stats
 

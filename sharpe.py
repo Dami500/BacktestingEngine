@@ -110,23 +110,35 @@ def calculate_drawdowns(pnl):
     """
     Calculate the largest peak-to-trough drawdown of the PnL curve
     as well as the duration of the drawdown. Requires that the
-    pnl_returns is a pandas Series
+    pnl_returns is a pandas Series.
+
     Parameters:
     pnl - A pandas Series representing period percentage returns.
+
     Returns:
-    drawdown, duration - Highest peak-to-trough drawdown and duration.
+    drawdown, max_drawdown, max_duration - The drawdown series, maximum drawdown,
+    and the duration of the maximum drawdown.
     """
     # Calculate the cumulative returns curve
-    # and set up the High Watermark
-    hwm = [0]
+    cumulative_returns = (1 + pnl).cumprod() - 1
+
+    # High Watermark list to track the maximum cumulative returns up to that point
+    hwm = [0]  # Initial High Watermark (before any returns)
     # Create the drawdown and duration series
     idx = pnl.index
     drawdown = pd.Series(index=idx)
     duration = pd.Series(index=idx)
-    # Loop over the index range
+
+    # Loop over the index range to calculate drawdown and duration
     for t in range(1, len(idx)):
-        hwm.append(max(hwm[t - 1], pnl[t]))
-        drawdown[t] = (hwm[t] - pnl[t])
-        duration[t] = (0 if drawdown[t] == 0 else duration[t - 1] + 1)
-    return drawdown, drawdown.max(), duration.max()
+        hwm.append(max(hwm[t - 1], cumulative_returns[t]))
+        drawdown[t] = hwm[t] - cumulative_returns[t]
+        duration[t] = 0 if drawdown[t] == 0 else duration[t - 1] + 1
+
+    # Get maximum drawdown and its duration
+    max_drawdown = drawdown.max()
+    max_duration = duration.max()
+
+    return drawdown, max_drawdown, max_duration
+
 

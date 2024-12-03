@@ -203,7 +203,6 @@ class securities_master_handler(data_handler):
             symbols[ticker] = df.iloc[0, 0]
         return symbols
 
-
     def get_prices(self, locations):
         """
         Makes use of the symbol_id list to return dataframes of the prices of those assets
@@ -223,6 +222,13 @@ class securities_master_handler(data_handler):
             specific_data['returns'] = specific_data['close_price'].pct_change()
             specific_data['returns'].fillna(0, inplace=True)
             dataframes.append(specific_data)
+        start_date = []
+        start = None
+        for package in dataframes:
+            start_date.append(package.iloc[1, 1])
+            start = max(start_date)
+        for i ,package in enumerate(dataframes):
+            dataframes[i] = package.loc[package['price_date'] >= start]
         return dataframes
 
     def pull_data(self, price_type):
@@ -241,52 +247,14 @@ class securities_master_handler(data_handler):
             day = []
             for package in data:
                 name = package.columns[0]
-                constructor = {name: [], 'Date': [], 'returns': []}
+                constructor = {name: None, 'Date': None, 'returns': None}
                 package = package[[price_type, 'price_date', 'returns']]
-                constructor[name].append(package.iloc[i, 0])
-                constructor['Date'].append(package.iloc[i, 1])
-                constructor['returns'].append(package.iloc[i, 2])
+                constructor[name] = package.iloc[i, 0]
+                constructor['Date'] = package.iloc[i, 1]
+                constructor['returns'] = package.iloc[i, 2]
                 day.append(constructor)
             self.symbol_data.append(day)
         return self.symbol_data
-        #     page = {package.columns[0]: [], 'Date': [], 'Returns': []}
-        #     loop = package[[price_type, 'price_date']]
-        #     loop['returns'] = loop[price_type].pct_change()
-        #     for i in range(len(loop[price_type])):
-        #         page[package.columns[0]].append(loop.iloc[i, 0])
-        #         page['Date'].append(loop.iloc[i, 1])
-        #         page['Returns'].append(loop.iloc[i, 2])
-        #
-        #     self.symbol_data.append(page)
-        # return self.symbol_data
-
-    # def pull_data(self, price_type):
-    #     """
-    #     pulls data from the database based on the symbol
-    #     """
-    #     con = msc.connect(host=self.host, user=self.user, password=self.password, db=self.db_name, auth_plugin=self.plugin)
-    #     symbol_select_str = """SELECT securities_master.symbol.id
-    #                            FROM securities_master.symbol
-    #                            where securities_master.symbol.ticker = '%s'""" % self.symbol
-    #     df = pd.read_sql_query(symbol_select_str, con)
-    #     symbol_id = df.iloc[0, 0]
-    #     select_str = """select distinct *
-    #                     from securities_master.daily_price
-    #                     where securities_master.daily_price.symbol_id = '%d'
-    #                     order by securities_master.daily_price.price_date
-    #                         """ % symbol_id
-    #     final_df = pd.read_sql_query(select_str, con)
-    #     final_df['returns'] = final_df[price_type].pct_change().fillna(0)
-    #     self.symbol_data[self.symbol] = []
-    #     for price in final_df['%s' % price_type]:
-    #         self.symbol_data[self.symbol].append(price)
-    #     self.symbol_data['Date'] = []
-    #     for date in final_df['price_date']:
-    #         self.symbol_data['Date'].append(date)
-    #     self.symbol_data['returns'] = []
-    #     for returns in final_df['returns']:
-    #         self.symbol_data['returns'].append(returns)
-    #     return self.symbol_data
 
     def get_new_bar(self, price_type):
         """
@@ -325,7 +293,7 @@ class securities_master_handler(data_handler):
                 bars_dict[list(bar.keys())[0]] = []
             for day in self.latest_symbol_data[-N:]:
                 for bar in day:
-                    bars_dict[list(bar.keys())[0]].append(bar[list(bar.keys())[0]][0])
+                    bars_dict[list(bar.keys())[0]].append(bar[list(bar.keys())[0]])
         except KeyError:
             print("That symbol is not available in the historical data set.")
             raise
@@ -339,7 +307,7 @@ class securities_master_handler(data_handler):
         try:
             bars_list = []
             for bar in self.latest_symbol_data[-N:]:
-                bars_list.append(bar[0]['Date'][0])
+                bars_list.append(bar[0]['Date'])
         except KeyError:
             print("That symbol is not available in the historical data set.")
             raise
@@ -358,7 +326,7 @@ class securities_master_handler(data_handler):
         else:
             if bar is not None:
                 self.latest_symbol_data.append(bar)
-        # self.events.put(market_event())
+        self.events.put(market_event())
         return self.latest_symbol_data
 
 
@@ -382,21 +350,3 @@ class strategy(object):
         """
         raise NotImplementedError("Should implement calculate_signals()")
 
-# aapl = securities_master_handler(event, ['AAPL', 'GOOG', 'LLY'],  'localhost','sec_user','Damilare20$', 'securities_master',
-#                                  'caching_sha2_password')
-# data = aapl.pull_data('close_price')
-# gen = aapl.get_new_bar('close_price')
-# aapl.update_bars('AAPL', gen, 0)
-# aapl.update_bars('AAPL', gen, 1)
-# aapl.update_bars('AAPL', gen, 2)
-# latest = aapl.latest_symbol_data
-# print(latest)
-#
-# print(aapl.get_latest_bars_datetime(3))
-# print(aapl.get_latest_bars(3))
-# print(aapl.get_latest_bar_value('AAPL'))
-# # db_host = 'localhost'
-# db_user = 'sec_user'
-# db_pass = 'Damilare20$'
-# db_name = 'securities_master'
-# plug ='caching_sha2_password'

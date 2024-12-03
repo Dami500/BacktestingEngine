@@ -54,7 +54,8 @@ class MovingAverageCrossStrategy(strategy):
         """
         if events.type == 'MARKET':
             bars = self.bars.get_latest_bars(self.long_window)
-            for bar in bars:
+            # print(bars)
+            for bar in list(bars.keys()):
                 bar_date = self.bars.get_latest_bars_datetime(1)
                 if bar is not None and bars[bar] != []:
                     short_ma = np.mean(bars[bar][0:self.short_window])
@@ -85,7 +86,7 @@ if __name__ == "__main__":
     initial_capital = 100000.0
     heartbeat = 0
     # events = queue.Queue()
-    start_date = datetime(2020, 1, 1, 0, 0, 0)
+    start_date = datetime(2004, 1, 1, 0, 0, 0)
     # SMH = securities_master_handler(symbol, db_host, db_user, db_pass, db_name)
     # MAC = MovingAverageCrossStrategy(SMH, events)
     backtest = Backtest(symbol, db_host, db_user, db_pass, db_name, plug_in, initial_capital,

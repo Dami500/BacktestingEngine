@@ -99,7 +99,7 @@ class Backtest(object):
         data = self.portfolio.create_equity_curve_dataframe()
         # Plot three charts: Equity curve,
         # period returns, drawdowns
-        fig = plt.figure()
+        fig = plt.figure(figsize=(8,10))
         # Set the outer colour to white
         fig.patch.set_facecolor('white')
         # Plot the equity curve
