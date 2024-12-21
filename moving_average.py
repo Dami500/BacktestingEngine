@@ -77,7 +77,7 @@ class MovingAverageCrossStrategy(strategy):
 
 
 if __name__ == "__main__":
-    symbol = ['AAPL', 'GOOG']
+    symbol = ['AAPL', 'GOOG', 'SPY', 'LLY']
     db_host = 'localhost'
     db_user = 'sec_user'
     db_pass = 'Damilare20$'
