@@ -7,12 +7,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import mysql.connector as msc
 
-# db_host = 'localhost'
-# db_user = 'sec_user'
-# db_pass = 'Damilare20$'
-# db_name = 'securities_master'
-# plug ='caching_sha2_password'
-# con = msc.connect(host=db_host, user=db_user, password=db_pass, db=db_name, auth_plugin= plug)
+db_host = 'localhost'
+db_user = 'sec_user'
+db_pass = 'Damilare20%'
+db_name = 'securities_master'
+con = msc.connect(host=db_host, user=db_user, password=db_pass, db=db_name)
 
 
 
@@ -21,7 +20,7 @@ class Backtest(object):
     Encapsulates the settings and components for carrying out
     an event-driven backtest.
     """
-    def __init__(self, symbol, host, user, password, name, plugin, initial_capital, heartbeat, start_date, data_handler
+    def __init__(self, symbol, host, user, password, name, initial_capital, heartbeat, start_date, data_handler
                  , execution_handler, portfolio, strategy):
         """
         Initialize the backtest.
@@ -30,13 +29,12 @@ class Backtest(object):
         self.host = host
         self.user = user
         self.password = password
-        self.plugin = plugin
         self.db_name = name
         self.initial_capital = initial_capital
         self.heartbeat = heartbeat
         self.events = queue.Queue()
         self.start_date = start_date
-        self.data_handler = data_handler(self.events, self.symbols, self.host, self.user, self.password, self.db_name, self.plugin)
+        self.data_handler = data_handler(self.events, self.symbols, self.host, self.user, self.password, self.db_name)
         self.execution_handler = execution_handler(self.events)
         self.portfolio = portfolio(self.data_handler, self.events, self.start_date, self.symbols, self.initial_capital)
         self.strategy = strategy(self.data_handler, self.events)
@@ -119,6 +117,7 @@ class Backtest(object):
         Simulates the backtest and outputs portfolio performance.
         """
         self.run_backtest(price_type)
+        print(self.strategy.bought)
         self.output_performance()
         self.plot_values()
 

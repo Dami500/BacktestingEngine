@@ -13,12 +13,6 @@ import mysql.connector as msc
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.ensemble import RandomForestRegressor as rf
 
-db_host = 'localhost'
-db_user = 'sec_user'
-db_pass = 'Damilare20$'
-db_name = 'securities_master'
-plug ='caching_sha2_password'
-con = msc.connect(host=db_host, user=db_user, password=db_pass, db=db_name, auth_plugin= plug)
 
 
 class SPYdailyforecastrategy(strategy):
@@ -87,23 +81,23 @@ class SPYdailyforecastrategy(strategy):
                     self.events.put(signal)
 
 
-# if __name__ == "__main__":
-#     symbol = 'AAPL'
-#     db_host = 'localhost'
-#     db_user = 'sec_user'
-#     db_pass = 'Damilare20$'
-#     db_name = 'securities_master'
-#     plug_in = 'caching_sha2_password'
-#     initial_capital = 100000.0
-#     heartbeat = 0
-#     # events = queue.Queue()
-#     start_date = datetime(2001, 1, 1, 0, 0, 0)
-#     # SMH = securities_master_handler(symbol, db_host, db_user, db_pass, db_name)
-#     # MAC = MovingAverageCrossStrategy(SMH, events)
-#     backtest = Backtest(symbol, db_host, db_user, db_pass, db_name, plug_in, initial_capital,
-#                         heartbeat, start_date, securities_master_handler, SimulatedExecutionHandler,
-#                         portfolio, SPYdailyforecastrategy)
-#     backtest.simulate_trading('close_price')
+if __name__ == "__main__":
+    symbol = 'AAPL'
+    db_host = 'localhost'
+    db_user = 'sec_user'
+    db_pass = 'Damilare20$'
+    db_name = 'securities_master'
+    plug_in = 'caching_sha2_password'
+    initial_capital = 100000.0
+    heartbeat = 0
+    # events = queue.Queue()
+    start_date = datetime(2001, 1, 1, 0, 0, 0)
+    # SMH = securities_master_handler(symbol, db_host, db_user, db_pass, db_name)
+    # MAC = MovingAverageCrossStrategy(SMH, events)
+    backtest = Backtest(symbol, db_host, db_user, db_pass, db_name, plug_in, initial_capital,
+                        heartbeat, start_date, securities_master_handler, SimulatedExecutionHandler,
+                        portfolio, SPYdailyforecastrategy)
+    backtest.simulate_trading('close_price')
 
 
 

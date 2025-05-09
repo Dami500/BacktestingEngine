@@ -163,7 +163,7 @@ class securities_master_handler(data_handler):
     to obtain the "latest" bar in a manner identical to a live
     trading interface.
     """
-    def __init__(self, events, symbols, host, user, password, name, plug_in):
+    def __init__(self, events, symbols, host, user, password, name):
         """
         initialises the securities_master_handler by connecting to the database and
         pulling data concerning the symbols in the symbol list
@@ -175,7 +175,6 @@ class securities_master_handler(data_handler):
             password - The database password
             name - The database name
         """
-        self.plugin = plug_in
         self.symbols = symbols
         self.host = host
         self.user = user
@@ -186,14 +185,14 @@ class securities_master_handler(data_handler):
         self.latest_symbol_data = []
         self.continue_backtest = True
 
-    def get_prices_id(self, tickers):
+    def get_prices_id(self):
         """
         Locates the corresponding symbol ID for each ticker in the list of tickers
         returns a pandas dataframe for IDs
         """
-        con = msc.connect(host=self.host, user=self.user, password=self.password, db=self.db_name,auth_plugin=self.plugin)
+        con = msc.connect(host=self.host, user=self.user, password=self.password, db=self.db_name)
         symbols = {}
-        for ticker in tickers:
+        for ticker in self.symbols:
             select_str = """
             SELECT securities_master.symbol.id
             from securities_master.symbol
@@ -207,8 +206,7 @@ class securities_master_handler(data_handler):
         """
         Makes use of the symbol_id list to return dataframes of the prices of those assets
         """
-        con = msc.connect(host=self.host, user=self.user, password=self.password, db=self.db_name,
-                          auth_plugin=self.plugin)
+        con = msc.connect(host=self.host, user=self.user, password=self.password, db=self.db_name)
         dataframes = []
         for id in locations.keys():
             select_str = """SELECT *
@@ -236,7 +234,7 @@ class securities_master_handler(data_handler):
          pulls data from the database based on the symbol
          returns a list of dictionaries
          """
-        tickers = self.get_prices_id(self.symbols)
+        tickers = self.get_prices_id()
         data = self.get_prices(tickers)
         choices = []
         for package in data:
